@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>角色伤害计算器</title>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f5f7fa;
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+    }
+    .container {
+      max-width: 420px;
+      margin: 40px auto 0 auto;
+      background: #fff;
+      border-radius: 18px;
+      box-shadow: 0 4px 24px 0 rgba(0,0,0,0.10);
+      padding: 32px 24px 24px 24px;
+    }
+    h2 {
+      text-align: center;
+      color: #3a3a3a;
+      margin-bottom: 28px;
+      letter-spacing: 2px;
+    }
+    .form-group {
+      margin-bottom: 18px;
+      display: flex;
+      flex-direction: column;
+    }
+    label {
+      margin-bottom: 6px;
+      color: #555;
+      font-size: 1em;
+    }
+    input, select {
+      padding: 8px 12px;
+      border: 1.5px solid #d0d7de;
+      border-radius: 8px;
+      font-size: 1em;
+      transition: border 0.2s, box-shadow 0.2s;
+      outline: none;
+      background: #f9fafb;
+    }
+    input:focus, select:focus {
+      border: 1.5px solid #4f8cff;
+      box-shadow: 0 0 0 2px #e3edff;
+      background: #fff;
+    }
+    .input-tip {
+      font-size: 0.92em;
+      color: #888;
+      margin-top: 2px;
+      margin-left: 2px;
+    }
+    button {
+      width: 100%;
+      padding: 12px 0;
+      background: linear-gradient(90deg, #4f8cff 0%, #6ed0ff 100%);
+      color: #fff;
+      font-size: 1.1em;
+      font-weight: bold;
+      border: none;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px 0 rgba(79,140,255,0.10);
+      cursor: pointer;
+      transition: background 0.2s, box-shadow 0.2s;
+      margin-top: 10px;
+      letter-spacing: 1px;
+    }
+    button:hover {
+      background: linear-gradient(90deg, #357ae8 0%, #4fc3f7 100%);
+      box-shadow: 0 4px 16px 0 rgba(79,140,255,0.13);
+    }
+    .result {
+      margin-top: 32px;
+      background: #eaf4ff;
+      border-radius: 12px;
+      padding: 20px 16px;
+      color: #1a3a5e;
+      font-size: 1.18em;
+      box-shadow: 0 2px 8px 0 rgba(79,140,255,0.07);
+      text-align: center;
+    }
+    @media (max-width: 600px) {
+      .container {
+        max-width: 98vw;
+        padding: 16px 4vw 18px 4vw;
+      }
+      h2 {
+        font-size: 1.2em;
+      }
+      .result {
+        font-size: 1em;
+        padding: 14px 4vw;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container" id="app">
+    <h2>角色伤害计算器</h2>
+    <div class="form-group">
+      <label>基础数值</label>
+      <input v-model.number="baseStat" type="number" min="0" placeholder="如 2000">
+      <div class="input-tip">角色攻击/生命/防御等，输入整数</div>
+    </div>
+    <div class="form-group">
+      <label>技能倍率（%）</label>
+      <input v-model.number="skillRatio" type="number" min="0" step="0.01" placeholder="如 300">
+      <div class="input-tip">输入整数或小数，100代表100%</div>
+    </div>
+    <div class="form-group">
+      <label>基础伤害值加成</label>
+      <input v-model.number="baseDmgBonus" type="number" step="0.01" placeholder="如 500">
+      <div class="input-tip">输入整数或小数，无单位（例如申鹤的冰翎）</div>
+    </div>
+    <div class="form-group">
+      <label>独立乘区（%）</label>
+      <input v-model.number="independentBonus" type="number" min="0" step="0.01" placeholder="如 20">
+      <div class="input-tip">输入整数或小数，100代表100%（例如那维莱特或者丝柯克的天赋）</div>
+    </div>
+    <div class="form-group">
+      <label>元素精通</label>
+      <input v-model.number="em" type="number" min="0" placeholder="如 200">
+      <div class="input-tip">输入整数</div>
+    </div>
+    <div class="form-group">
+      <label>元素反应类型</label>
+      <select v-model="reactionType">
+        <option value="none">无</option>
+        <option value="melt_pyro">火融化</option>
+        <option value="melt_cryo">冰融化</option>
+        <option value="vaporize_hydro">水蒸发</option>
+        <option value="vaporize_pyro">火蒸发</option>
+      </select>
+      <div class="input-tip">选择对应元素反应类型</div>
+    </div>
+    <div class="form-group">
+      <label>元素反应伤害加成（%）</label>
+      <input v-model.number="reactionBonus" type="number" min="0" step="0.01" placeholder="如 20">
+      <div class="input-tip">输入整数或小数，100代表100%（例如莫娜一命）</div>
+    </div>
+    <div class="form-group">
+        <label>反应系数加成（%）</label>
+        <input v-model.number="reactionCoefBonus" type="number" min="0" step="0.01" placeholder="如 15">
+        <div class="input-tip">输入整数或小数，100代表100%（例如魔女套）</div>
+      </div>
+    <div class="form-group">
+      <label>元素伤害加成（%）</label>
+      <input v-model.number="elementBonus" type="number" min="0" step="0.01" placeholder="如 46.6">
+      <div class="input-tip">输入整数或小数，100代表100%</div>
+    </div>
+    <div class="form-group">
+      <label>敌人抗性（%）</label>
+      <input v-model.number="resistance" type="number" step="0.01" placeholder="如 10 或 -20">
+      <div class="input-tip">可为负数，输入整数或小数</div>
+    </div>
+    <div class="form-group">
+      <label>角色等级</label>
+      <input v-model.number="charLevel" type="number" min="1" max="100" placeholder="如 90">
+      <div class="input-tip">输入整数或小数</div>
+    </div>
+    <div class="form-group">
+      <label>怪物等级</label>
+      <input v-model.number="enemyLevel" type="number" min="1" max="100" placeholder="如 95">
+      <div class="input-tip">输入整数或小数</div>
+    </div>
+    <div class="form-group">
+      <label>减防比例（%）</label>
+      <input v-model.number="defReduction" type="number" min="0" max="100" step="0.01" placeholder="如 30">
+      <div class="input-tip">输入整数或小数，100代表100%</div>
+    </div>
+    <div class="form-group">
+      <label>无视防御比例（%）</label>
+      <input v-model.number="defIgnore" type="number" min="0" max="100" step="0.01" placeholder="如 0">
+      <div class="input-tip">输入整数或小数，100代表100%</div>
+    </div>
+    <div class="form-group">
+      <label>暴击率（%）</label>
+      <input v-model.number="critRate" type="number" min="0" max="100" step="0.01" placeholder="如 50">
+      <div class="input-tip">输入整数或小数，100代表100%</div>
+    </div>
+    <div class="form-group">
+      <label>暴击伤害（%）</label>
+      <input v-model.number="critDmg" type="number" min="0" step="0.01" placeholder="如 200">
+      <div class="input-tip">输入整数或小数，100代表100%</div>
+    </div>
+    <button @click="calc">计算伤害</button>
+
+    <div class="result" v-if="showResult">
+      <div>不暴击伤害：{{ normalDmg.toFixed(2) }}</div>
+      <div>暴击伤害：{{ critDmgVal.toFixed(2) }}</div>
+      <div>期望伤害：{{ expectedDmg.toFixed(2) }}</div>
+    </div>
+  </div>
+  <script src="main.js"></script>
+</body>
+</html> 
